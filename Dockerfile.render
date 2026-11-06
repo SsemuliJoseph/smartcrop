@@ -1,0 +1,9 @@
+# Light container for free hosts (Render / Koyeb / Cloud Run): ONNX Runtime, no TensorFlow.
+FROM python:3.11-slim
+WORKDIR /app
+COPY inference/requirements-onnx.txt .
+RUN pip install --no-cache-dir -r requirements-onnx.txt
+COPY inference/__init__.py inference/app_onnx.py inference/labels.json inference/model.onnx ./inference/
+ENV PORT=10000
+EXPOSE 10000
+CMD ["sh", "-c", "uvicorn inference.app_onnx:app --host 0.0.0.0 --port ${PORT}"]

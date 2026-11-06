@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PotatoGuard — AI Potato Disease Detection System</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,700;0,900;1,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+<!-- ============================================================
+     TOAST NOTIFICATION
+============================================================ -->
+<div id="toast" class="toast"></div>
+
+<!-- ============================================================
+     MODAL OVERLAY
+============================================================ -->
+<div id="modalOverlay" class="modal-overlay" onclick="closeModal()"></div>
+
+<!-- LOGIN MODAL -->
+<div id="loginModal" class="modal">
+  <button class="modal-close" onclick="closeModal()">✕</button>
+  <div class="modal-header">
+    <div class="modal-logo">🥔</div>
+    <h2>Welcome Back</h2>
+    <p>Sign in to your PotatoGuard account</p>
+  </div>
+  <div class="modal-tabs">
+    <button class="modal-tab active" onclick="switchAuthTab('login')">Sign In</button>
+    <button class="modal-tab" onclick="switchAuthTab('register')">Register</button>
+  </div>
+  <!-- Login Form -->
+  <div id="loginForm" class="auth-form">
+    <div class="form-group">
+      <label>Farmer ID</label>
+      <input type="text" id="loginId" placeholder="e.g. farmer001" autocomplete="username"/>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="loginPass" placeholder="Enter your password" autocomplete="current-password"/>
+    </div>
+    <button class="btn btn-green full-width" onclick="doLogin()">Sign In →</button>
+    <p class="auth-hint">Your Farmer ID and scan history are stored on this device only</p>
+  </div>
+  <!-- Register Form -->
+  <div id="registerForm" class="auth-form" style="display:none">
+    <div class="form-group">
+      <label>Full Name</label>
+      <input type="text" id="regName" placeholder="Your full name"/>
+    </div>
+    <div class="form-group">
+      <label>Farmer ID</label>
+      <input type="text" id="regId" placeholder="Choose a farmer ID"/>
+    </div>
+    <div class="form-group">
+      <label>Location / District</label>
+      <input type="text" id="regLocation" placeholder="e.g. Kabale, Uganda"/>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="regPass" placeholder="Create a password"/>
+    </div>
+    <button class="btn btn-green full-width" onclick="doRegister()">Create Account →</button>
+  </div>
+</div>
+
+<!-- REPORT MODAL -->
+<div id="reportModal" class="modal modal-wide">
+  <button class="modal-close" onclick="closeModal()">✕</button>
+  <div id="reportContent"></div>
+</div>
+
+<!-- ============================================================
+     PAGE: LANDING
+============================================================ -->
+<div id="page-landing" class="page active">
+
+  <!-- NAV -->
+  <header class="landing-nav">
+    <div class="nav-brand">
+      <span class="nav-logo">🥔</span>
+      <span class="nav-name">PotatoGuard</span>
+    </div>
+    <nav class="nav-links">
+      <a href="#" onclick="scrollToSection('features')">Features</a>
+      <a href="#" onclick="scrollToSection('diseases')">Diseases</a>
+      <a href="#" onclick="scrollToSection('how-it-works')">How It Works</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="btn btn-outline-sm" onclick="openLoginModal()">Sign In</button>
+      <button class="btn btn-green-sm" onclick="openLoginModal()">Get Started</button>
+    </div>
+    <button class="hamburger" onclick="toggleMobileMenu()" id="hamburger">☰</button>
+  </header>
+
+  <!-- MOBILE MENU -->
+  <div id="mobileMenu" class="mobile-menu">
+    <a href="#" onclick="scrollToSection('features');toggleMobileMenu()">Features</a>
+    <a href="#" onclick="scrollToSection('diseases');toggleMobileMenu()">Diseases</a>
+    <a href="#" onclick="scrollToSection('how-it-works');toggleMobileMenu()">How It Works</a>
+    <button class="btn btn-green full-width" onclick="openLoginModal();toggleMobileMenu()">Get Started →</button>
+  </div>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-bg-shapes">
+      <div class="shape shape-1"></div>
+      <div class="shape shape-2"></div>
+      <div class="shape shape-3"></div>
+    </div>
+    <div class="hero-content">
+      <div class="hero-badge">🌍 Protecting Ugandan Potato Farmers</div>
+      <h1 class="hero-title">
+        Diagnose Potato Diseases<br/>
+        <em>Instantly with AI</em>
+      </h1>
+      <p class="hero-subtitle">
+        Point your camera at a potato leaf. PotatoGuard's AI model identifies
+        Late Blight, Early Blight and Healthy potato leaves in seconds —
+        then gives you expert treatment advice.
+      </p>
+      <div class="hero-actions">
+        <button class="btn btn-hero-primary" onclick="openLoginModal()">
+          🌿 Start Scanning Free
+        </button>
+        <button class="btn btn-hero-secondary" onclick="scrollToSection('how-it-works')">
+          ▶ See How It Works
+        </button>
+      </div>
+      <div class="hero-stats">
+        <div class="hstat"><span class="hstat-num" data-target="3">0</span><span class="hstat-label">Leaf Conditions Detected</span></div>
+        <div class="hstat-divider"></div>
+        <div class="hstat"><span class="hstat-num" id="statAccuracy">—</span><span class="hstat-label">% Held-out Test Accuracy</span></div>
+        <div class="hstat-divider"></div>
+        <div class="hstat"><span class="hstat-num" data-target="100">0</span><span class="hstat-label">% Free to Use</span></div>
+      </div>
+    </div>
+    <div class="hero-image">
+      <div class="phone-mockup">
+        <div class="phone-screen">
+          <div class="phone-app-bar">🥔 PotatoGuard</div>
+          <div class="phone-scan-area">
+            <div class="scan-frame">
+              <div class="scan-corner tl"></div>
+              <div class="scan-corner tr"></div>
+              <div class="scan-corner bl"></div>
+              <div class="scan-corner br"></div>
+              <div class="scan-line"></div>
+              <div class="leaf-display">🌿</div>
+            </div>
+          </div>
+          <div class="phone-result-chip healthy">✅ Healthy — 97%</div>
+          <div class="phone-treat-chip">Keep monitoring weekly</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES SECTION -->
+  <section class="section" id="features">
+    <div class="section-inner">
+      <div class="section-label">Why PotatoGuard</div>
+      <h2 class="section-title">Everything a potato farmer needs</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🤖</div>
+          <h3>AI-Powered Detection</h3>
+          <p>MobileNetV2 CNN trained on potato leaf images. Detects Early Blight, Late Blight and Healthy leaves; accuracy is reported from a held-out test set.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3>Results in Seconds</h3>
+          <p>The model runs on a hosted inference service, so there is nothing to install. Take a photo and get a diagnosis within seconds.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">💊</div>
+          <h3>Expert Treatment Advice</h3>
+          <p>Every diagnosis comes with specific fungicide recommendations, application timing, and preventive measures.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <h3>Scan History & Reports</h3>
+          <p>Track all your past scans. View disease trends over time. Export PDF reports to share with agronomists.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📚</div>
+          <h3>Disease Encyclopedia</h3>
+          <p>Deep-dive information on every disease: symptoms, causes, life cycle, spread patterns, and prevention.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🌦️</div>
+          <h3>Seasonal Farming Tips</h3>
+          <p>Curated advice from agronomists on planting schedules, soil management, irrigation, and yield improvement.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DISEASES SECTION -->
+  <section class="section section-dark" id="diseases">
+    <div class="section-inner">
+      <div class="section-label light">Detectable Diseases</div>
+      <h2 class="section-title light">Know your potato diseases.</h2>
+      <div class="diseases-grid">
+        <div class="disease-info-card healthy-card" onclick="openLoginModal()">
+          <div class="dic-emoji">🌿</div>
+          <div class="dic-status">✅ Healthy</div>
+          <p>No disease detected. Your plant is growing well. Continue regular monitoring and good farming practices.</p>
+          <div class="dic-tag">No action needed</div>
+        </div>
+        <div class="disease-info-card late-card" onclick="openLoginModal()">
+          <div class="dic-emoji">🍂</div>
+          <div class="dic-status">🔴 Late Blight</div>
+          <p>Caused by <em>Phytophthora infestans</em>. Water-soaked lesions on leaves. Spreads rapidly in cool, moist conditions.</p>
+          <div class="dic-tag">Immediate fungicide</div>
+        </div>
+        <div class="disease-info-card early-card" onclick="openLoginModal()">
+          <div class="dic-emoji">🟤</div>
+          <div class="dic-status">🟠 Early Blight</div>
+          <p>Caused by <em>Alternaria solani</em>. Dark concentric ring spots on older leaves. Spreads upward through the canopy.</p>
+          <div class="dic-tag">Copper fungicide</div>
+        </div>
+        <div class="disease-info-card wilt-card" onclick="openLoginModal()">
+          <div class="dic-emoji">🥀</div>
+          <div class="dic-status">🟣 Bacterial Wilt</div>
+          <p>Caused by <em>Ralstonia solanacearum</em>. Wilting of shoots even when soil is moist. Soil-borne, no chemical cure.</p>
+          <div class="dic-tag">Remove & destroy</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="section" id="how-it-works">
+    <div class="section-inner">
+      <div class="section-label">Process</div>
+      <h2 class="section-title">From leaf to diagnosis in 4 steps</h2>
+      <div class="steps-row">
+        <div class="step-card">
+          <div class="step-num">01</div>
+          <div class="step-icon">📷</div>
+          <h3>Take a Photo</h3>
+          <p>Open the scanner, take or upload a clear photo of a potato leaf using your phone or computer.</p>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step-card">
+          <div class="step-num">02</div>
+          <div class="step-icon">☁️</div>
+          <h3>AI Analysis</h3>
+          <p>The photo is sent to our hosted CNN model, which returns a diagnosis within seconds.</p>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step-card">
+          <div class="step-num">03</div>
+          <div class="step-icon">🔬</div>
+          <h3>Get Diagnosis</h3>
+          <p>The disease is identified with a confidence score. Your result is colour-coded for instant understanding.</p>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step-card">
+          <div class="step-num">04</div>
+          <div class="step-icon">💊</div>
+          <h3>Follow Treatment</h3>
+          <p>Read the specific treatment advice and save your result to your scan history for future reference.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TECH STACK -->
+  <section class="section section-pale" id="tech">
+    <div class="section-inner">
+      <div class="section-label">Technology</div>
+      <h2 class="section-title">Built with open, low-cost tools</h2>
+      <div class="tech-grid">
+        <div class="tech-card"><div class="tech-icon">📱</div><div class="tech-name">React Native + Expo</div><div class="tech-desc">Mobile App</div></div>
+        <div class="tech-card"><div class="tech-icon">🧠</div><div class="tech-name">MobileNetV2 CNN</div><div class="tech-desc">AI Model</div></div>
+        <div class="tech-card"><div class="tech-icon">🚀</div><div class="tech-name">FastAPI</div><div class="tech-desc">Inference API</div></div>
+        <div class="tech-card"><div class="tech-icon">🤗</div><div class="tech-name">Hugging Face Spaces</div><div class="tech-desc">Model Hosting</div></div>
+        <div class="tech-card"><div class="tech-icon">💾</div><div class="tech-name">On-device storage</div><div class="tech-desc">Scan History</div></div>
+        <div class="tech-card"><div class="tech-icon">🌐</div><div class="tech-name">PlantVillage Dataset</div><div class="tech-desc">Training Data</div></div>
+      </div>
+    </div>
+  </section>
+
+<!-- FOOTER -->
+  <footer class="landing-footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <span class="footer-logo">🥔</span>
+        <span class="footer-name">PotatoGuard</span>
+      </div>
+      <p class="footer-tagline">AI-Powered Irish Potato Disease Detection</p>
+      <p class="footer-copy">© 2025 PotatoGuard · BSc Computer Science · Mbarara University of Science and Technology · github.com/SsemuliJoseph/Smart-Crop</p>
+    </div>
+  </footer>
+</div><!-- end page-landing -->
+
+
+<!-- ============================================================
+     APP SHELL (shown after login)
+============================================================ -->
+<div id="appShell" class="app-shell" style="display:none">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sb-logo">🥔</div>
+      <div class="sb-brand">PotatoGuard</div>
+      <button class="sb-close" onclick="toggleSidebar()">✕</button>
+    </div>
+
+    <!-- User chip -->
+    <div class="sb-user" id="sbUser">
+      <div class="sb-avatar" id="sbAvatar">F</div>
+      <div>
+        <div class="sb-uname" id="sbUname">Farmer</div>
+        <div class="sb-uid" id="sbUid">farmer001</div>
+      </div>
+    </div>
+
+    <nav class="sb-nav">
+      <a class="sb-link active" onclick="showPage('dashboard')" data-page="dashboard">
+        <span class="sb-icon">📊</span> Dashboard
+      </a>
+      <a class="sb-link" onclick="showPage('scan')" data-page="scan">
+        <span class="sb-icon">🔍</span> Scan a Leaf
+      </a>
+      <a class="sb-link" onclick="showPage('history')" data-page="history">
+        <span class="sb-icon">📋</span> Scan History
+      </a>
+      <a class="sb-link" onclick="showPage('library')" data-page="library">
+        <span class="sb-icon">📚</span> Disease Library
+      </a>
+      <a class="sb-link" onclick="showPage('tips')" data-page="tips">
+        <span class="sb-icon">🌱</span> Farming Tips
+      </a>
+      <a class="sb-link" onclick="showPage('reports')" data-page="reports">
+        <span class="sb-icon">📄</span> Reports
+      </a>
+      <a class="sb-link" onclick="showPage('profile')" data-page="profile">
+        <span class="sb-icon">👤</span> My Profile
+      </a>
+      <a class="sb-link" onclick="showPage('about')" data-page="about">
+        <span class="sb-icon">ℹ️</span> About
+      </a>
+    </nav>
+
+    <div class="sb-footer">
+      <button class="sb-logout" onclick="doLogout()">⬅ Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT AREA -->
+  <div class="app-main" id="appMain">
+
+    <!-- TOP BAR -->
+    <header class="app-topbar">
+      <button class="topbar-menu" onclick="toggleSidebar()">☰</button>
+      <div class="topbar-title" id="topbarTitle">Dashboard</div>
+      <div class="topbar-right">
+        <div class="notif-bell" onclick="showToastMsg('No new notifications','')">🔔</div>
+        <div class="topbar-avatar" id="topbarAvatar">F</div>
+      </div>
+    </header>
+
+    <!-- ================================================
+         APP PAGE: DASHBOARD
+    ================================================ -->
+    <div id="app-dashboard" class="app-page active">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title" id="dashGreeting">Good morning, Farmer 🌱</h1>
+          <p class="page-subtitle">Here's an overview of your farm health</p>
+        </div>
+        <button class="btn btn-green" onclick="showPage('scan')">+ New Scan</button>
+      </div>
+
+      <!-- STAT CARDS -->
+      <div class="stats-grid">
+        <div class="stat-card stat-total">
+          <div class="stat-icon">🔬</div>
+          <div class="stat-value" id="statTotal">0</div>
+          <div class="stat-label">Total Scans</div>
+        </div>
+        <div class="stat-card stat-healthy">
+          <div class="stat-icon">✅</div>
+          <div class="stat-value" id="statHealthy">0</div>
+          <div class="stat-label">Healthy Plants</div>
+        </div>
+        <div class="stat-card stat-diseased">
+          <div class="stat-icon">⚠️</div>
+          <div class="stat-value" id="statDiseased">0</div>
+          <div class="stat-label">Diseases Found</div>
+        </div>
+        <div class="stat-card stat-rate">
+          <div class="stat-icon">📈</div>
+          <div class="stat-value" id="statRate">0%</div>
+          <div class="stat-label">Health Rate</div>
+        </div>
+      </div>
+
+      <!-- DASHBOARD ROW -->
+      <div class="dash-row">
+
+        <!-- DISEASE BREAKDOWN CHART -->
+        <div class="dash-card">
+          <div class="card-header">
+            <h3>Disease Breakdown</h3>
+            <span class="card-badge">This season</span>
+          </div>
+          <div class="chart-bars" id="diseaseChart">
+            <div class="chart-bar-row">
+              <span class="chart-label">Healthy</span>
+              <div class="chart-track"><div class="chart-fill fill-healthy" id="barHealthy" style="width:0%"></div></div>
+              <span class="chart-pct" id="pctHealthy">0%</span>
+            </div>
+            <div class="chart-bar-row">
+              <span class="chart-label">Late Blight</span>
+              <div class="chart-track"><div class="chart-fill fill-late" id="barLate" style="width:0%"></div></div>
+              <span class="chart-pct" id="pctLate">0%</span>
+            </div>
+            <div class="chart-bar-row">
+              <span class="chart-label">Early Blight</span>
+              <div class="chart-track"><div class="chart-fill fill-early" id="barEarly" style="width:0%"></div></div>
+              <span class="chart-pct" id="pctEarly">0%</span>
+            </div>
+            <div class="chart-bar-row">
+              <span class="chart-label">Bact. Wilt</span>
+              <div class="chart-track"><div class="chart-fill fill-wilt" id="barWilt" style="width:0%"></div></div>
+              <span class="chart-pct" id="pctWilt">0%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- QUICK ACTIONS -->
+        <div class="dash-card">
+          <div class="card-header">
+            <h3>Quick Actions</h3>
+          </div>
+          <div class="quick-actions">
+            <button class="qa-btn" onclick="showPage('scan')"><span>📷</span> Scan New Leaf</button>
+            <button class="qa-btn" onclick="showPage('history')"><span>📋</span> View History</button>
+            <button class="qa-btn" onclick="showPage('library')"><span>📚</span> Disease Library</button>
+            <button class="qa-btn" onclick="showPage('tips')"><span>🌱</span> Farming Tips</button>
+            <button class="qa-btn" onclick="showPage('reports')"><span>📄</span> My Reports</button>
+            <button class="qa-btn" onclick="showPage('profile')"><span>👤</span> My Profile</button>
+          </div>
+        </div>
+
+        <!-- WEATHER WIDGET -->
+        <div class="dash-card weather-card">
+          <div class="card-header">
+            <h3>Farm Weather</h3>
+            <span class="card-badge" id="weatherLocation">Loading…</span>
+          </div>
+          <div class="weather-main">
+            <div class="weather-icon" id="weatherIcon">⛅</div>
+            <div class="weather-temp" id="weatherTemp">24°C</div>
+          </div>
+          <div class="weather-desc" id="weatherDesc">Partly Cloudy — Good scanning conditions</div>
+          <div class="weather-row">
+            <div class="w-item"><span>💧</span> <span id="wHumidity">72%</span></div>
+            <div class="w-item"><span>🌬️</span> <span id="wWind">12 km/h</span></div>
+            <div class="w-item"><span>👁️</span> <span id="wVis">8 km</span></div>
+          </div>
+          <div class="disease-risk-row">
+            <span>Blight Risk:</span>
+            <div class="risk-bar"><div class="risk-fill" id="blightRisk" style="width:60%"></div></div>
+            <span id="riskLabel">Moderate</span>
+          </div>
+        </div>
+
+      </div><!-- end dash-row -->
+
+      <!-- RECENT SCANS -->
+      <div class="dash-card full-width">
+        <div class="card-header">
+          <h3>Recent Scans</h3>
+          <button class="link-btn" onclick="showPage('history')">View all →</button>
+        </div>
+        <div id="recentScansList" class="recent-list">
+          <div class="empty-state-small">No scans yet — <a onclick="showPage('scan')" style="cursor:pointer;color:var(--green);">scan your first leaf!</a></div>
+        </div>
+      </div>
+
+      <!-- DISEASE ALERT BANNER -->
+      <div class="alert-banner" id="alertBanner" style="display:none">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-text" id="alertText">Disease detected in recent scans. Check your field urgently.</div>
+        <button class="alert-action" onclick="showPage('library')">Learn More</button>
+      </div>
+
+    </div><!-- end dashboard -->
+
+    <!-- ================================================
+         APP PAGE: SCAN
+    ================================================ -->
+    <div id="app-scan" class="app-page">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Scan a Leaf</h1>
+          <p class="page-subtitle">Upload or take a photo of a potato leaf for AI analysis</p>
+        </div>
+      </div>
+
+      <div class="scan-layout">
+        <!-- LEFT: Upload area -->
+        <div class="scan-panel">
+          <div class="upload-zone" id="uploadZone" onclick="triggerFile()" 
+               ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+            <div id="uploadPlaceholder">
+              <div class="uz-icon">🌿</div>
+              <div class="uz-title">Drop your leaf photo here</div>
+              <div class="uz-sub">or click to browse · JPG, PNG up to 10MB</div>
+            </div>
+            <img id="scanPreview" src="" alt="" style="display:none"/>
+            <button class="remove-btn" id="scanRemoveBtn" onclick="removeScanPhoto(event)" style="display:none">✕</button>
+          </div>
+          <input type="file" id="scanFileInput" accept="image/*" onchange="handleScanFile(event)" style="display:none"/>
+          <div class="scan-source-btns">
+            <button class="source-btn" onclick="openScanCamera()"><span>📷</span> Take Photo</button>
+            <button class="source-btn" onclick="openScanGallery()"><span>🖼️</span> From Gallery</button>
+          </div>
+          <button class="btn btn-green full-width large-btn" id="analyseBtn" onclick="runScan()" disabled>
+            <div class="spinner" id="scanSpinner"></div>
+            <span id="analyseBtnText">🔍 Analyse Leaf</span>
+          </button>
+        </div>
+
+        <!-- RIGHT: Tips for best results -->
+        <div class="scan-tips-panel">
+          <h3>📸 Tips for Best Results</h3>
+          <div class="tip-item"><div class="tip-num">1</div><div><strong>Good lighting</strong> — Scan in natural daylight. Avoid dark or shadowy conditions.</div></div>
+          <div class="tip-item"><div class="tip-num">2</div><div><strong>Fill the frame</strong> — The leaf should occupy at least 70% of the photo.</div></div>
+          <div class="tip-item"><div class="tip-num">3</div><div><strong>One leaf at a time</strong> — Scan individual leaves for most accurate results.</div></div>
+          <div class="tip-item"><div class="tip-num">4</div><div><strong>Show symptoms clearly</strong> — If the leaf has spots or marks, make sure they are visible.</div></div>
+          <div class="tip-item"><div class="tip-num">5</div><div><strong>Avoid blurry shots</strong> — Hold your camera steady. Tap to focus before taking the photo.</div></div>
+
+          <div class="supported-diseases">
+            <h4>Detectable diseases</h4>
+            <div class="sd-pill healthy-pill">✅ Healthy</div>
+            <div class="sd-pill late-pill">🔴 Late Blight</div>
+            <div class="sd-pill early-pill">🟠 Early Blight</div>
+            <div class="sd-pill wilt-pill">🟣 Bacterial Wilt</div>
+          </div>
+        </div>
+      </div>
+    </div><!-- end scan -->
+
+    <!-- ================================================
+         APP PAGE: RESULT
+    ================================================ -->
+    <div id="app-result" class="app-page">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Detection Result</h1>
+          <p class="page-subtitle" id="resultTimestamp">Just now</p>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-outline" onclick="printReport()">🖨️ Print</button>
+          <button class="btn btn-green" onclick="showPage('scan')">+ New Scan</button>
+        </div>
+      </div>
+
+      <div class="result-layout">
+        <!-- MAIN RESULT -->
+        <div class="result-main-card" id="resultMainCard">
+          <div class="result-header" id="resultHeader">
+            <div class="result-big-emoji" id="resultBigEmoji">✅</div>
+            <div class="result-heading">
+              <h2 id="resultDisease">Healthy</h2>
+              <p id="resultScientific" class="result-scientific"></p>
+            </div>
+          </div>
+          <div class="result-conf-section">
+            <div class="conf-label-row">
+              <span id="resultConfidenceLabel">Detection Confidence</span>
+              <span id="resultConfPct" class="conf-pct">94%</span>
+            </div>
+            <div class="conf-track"><div class="conf-fill" id="resultConfBar" style="width:0%"></div></div>
+          </div>
+          <div class="result-severity">
+            <span class="sev-label">Severity:</span>
+            <div class="sev-dots" id="sevDots">
+              <span class="sev-dot"></span><span class="sev-dot"></span><span class="sev-dot"></span><span class="sev-dot"></span><span class="sev-dot"></span>
+            </div>
+            <span id="sevText" class="sev-text">None</span>
+          </div>
+        </div>
+
+        <!-- TREATMENT -->
+        <div class="result-section-card">
+          <h3 class="section-card-title">💊 Treatment Advice</h3>
+          <p id="treatmentFull" class="treatment-full-text"></p>
+          <div id="treatmentSteps" class="treatment-steps"></div>
+        </div>
+
+        <!-- PREVENTION -->
+        <div class="result-section-card">
+          <h3 class="section-card-title">🛡️ Prevention Tips</h3>
+          <ul id="preventionList" class="prev-list"></ul>
+        </div>
+
+        <!-- ABOUT DISEASE -->
+        <div class="result-section-card">
+          <h3 class="section-card-title">🔬 About This Disease</h3>
+          <div class="disease-about" id="diseaseAbout"></div>
+          <button class="link-btn" onclick="showPage('library')">Full info in Disease Library →</button>
+        </div>
+
+        <!-- ACTIONS -->
+        <div class="result-actions-row">
+          <button class="btn btn-green" onclick="showPage('scan')">🌿 Scan Another</button>
+          <button class="btn btn-outline" onclick="showPage('history')">📋 View History</button>
+          <button class="btn btn-outline" onclick="printReport()">🖨️ Print Report</button>
+        </div>
+      </div>
+    </div><!-- end result -->
+
+    <!-- ================================================
+         APP PAGE: HISTORY
+    ================================================ -->
+    <div id="app-history" class="app-page">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Scan History</h1>
+          <p class="page-subtitle">All your past disease detections</p>
+        </div>
+        <button class="btn btn-green" onclick="showPage('scan')">+ New Scan</button>
+      </div>
+
+      <!-- HISTORY STATS ROW -->
+      <div class="history-stats" id="historyStats"></div>
+
+      <!-- FILTERS -->
+      <div class="history-filters">
+        <input class="filter-search" type="text" id="historySearch" placeholder="🔍 Search by disease name…" oninput="filterHistory()"/>
+        <select class="filter-select" id="historyFilter" onchange="filterHistory()">
+          <option value="all">All Diseases</option>
+          <option value="Healthy">Healthy Only</option>
+          <option value="Late Blight">Late Blight</option>
+          <option value="Early Blight">Early Blight</option>
+          <option value="Bacterial Wilt">Bacterial Wilt</option>
+        </select>
+        <button class="btn btn-outline-sm" onclick="clearHistory()">🗑️ Clear All</button>
+        <button class="btn btn-outline-sm" onclick="exportCSV()">⬇️ Export CSV</button>
+      </div>
+
+      <!-- HISTORY TABLE -->
+      <div class="history-table-wrap">
+        <table class="history-table" id="historyTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Disease</th>
+              <th>Confidence</th>
+              <th>Date & Time</th>
+              <th>Severity</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody"></tbody>
+        </table>
+        <div id="historyEmpty" class="empty-state" style="display:none">
+          <div class="es-icon">🌱</div>
+          <div class="es-title">No scans yet</div>
+          <div class="es-sub">Scan your first potato leaf to see results here</div>
+          <button class="btn btn-green" onclick="showPage('scan')">Scan a Leaf</button>
+        </div>
+      </div>
+    </div><!-- end history -->
+
+    <!-- ================================================
+         APP PAGE: DISEASE LIBRARY
+    ================================================ -->
+    <div id="app-library" class="app-page">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Disease Library</h1>
+          <p class="page-subtitle">Detailed information on all detectable potato diseases</p>
+        </div>
+      </div>
+
+      <div class="library-grid">
+
+        <!-- HEALTHY -->
+        <div class="lib-card lib-healthy">
+          <div class="lib-card-header">
+            <div class="lib-emoji">🌿</div>
+            <div>
+              <h2 class="lib-name">Healthy</h2>
+              <p class="lib-sci">Normal plant — no disease detected</p>
+            </div>
+            <div class="lib-badge lb-healthy">✅ No Action</div>
+          </div>
+          <div class="lib-body">
+            <div class="lib-section"><h4>Description</h4><p>A healthy potato plant shows vibrant green leaves with no lesions, spots, wilting, or discolouration. Proper crop management maintains plant health throughout the growing season.</p></div>
+            <div class="lib-section"><h4>What to look for</h4><ul><li>Deep green leaves with no spots</li><li>Firm, upright stems</li><li>Even growth across the field</li><li>No unusual odours from the plant</li></ul></div>
+            <div class="lib-section"><h4>Maintain Health</h4><ul><li>Apply balanced NPK fertiliser at planting</li><li>Ensure adequate spacing (30–40cm between plants)</li><li>Water regularly — avoid waterlogging</li><li>Monitor weekly for early disease signs</li><li>Remove weeds that compete for nutrients</li></ul></div>
+          </div>
+        </div>
+
+        <!-- LATE BLIGHT -->
+        <div class="lib-card lib-late">
+          <div class="lib-card-header">
+            <div class="lib-emoji">🍂</div>
+            <div>
+              <h2 class="lib-name">Late Blight</h2>
+              <p class="lib-sci"><em>Phytophthora infestans</em></p>
+            </div>
+            <div class="lib-badge lb-late">🔴 Critical</div>
+          </div>
+          <div class="lib-body">
+            <div class="lib-section"><h4>Description</h4><p>Late Blight is the most destructive potato disease in the world — responsible for the Irish Potato Famine. It can destroy an entire field within days if untreated.</p></div>
+            <div class="lib-section"><h4>Symptoms</h4><ul><li>Water-soaked, dark green lesions on leaf edges</li><li>White fluffy mould under leaves in humid conditions</li><li>Lesions turn brown and the leaf dies rapidly</li><li>Brown rot extending into tubers</li><li>A distinct unpleasant smell from infected plants</li></ul></div>
+            <div class="lib-section"><h4>Causes & Spread</h4><ul><li>Caused by <em>Phytophthora infestans</em> (water mould)</li><li>Spreads via airborne spores in cool (10–25°C) wet weather</li><li>Can travel several kilometres in wind</li><li>Infected seed tubers are a major source</li></ul></div>
+            <div class="lib-section lib-red"><h4>🚨 Immediate Treatment</h4><ul><li>Apply <strong>Mancozeb 80% WP</strong> at 2.5kg/ha immediately</li><li>Or use <strong>Chlorothalonil 75% WP</strong> at 2kg/ha</li><li>Remove and destroy all visibly infected leaves/plants</li><li>Improve air circulation — avoid overhead irrigation</li><li>Re-apply fungicide every 7–10 days while wet weather continues</li><li>Do NOT compost infected material</li></ul></div>
+          </div>
+        </div>
+
+        <!-- EARLY BLIGHT -->
+        <div class="lib-card lib-early">
+          <div class="lib-card-header">
+            <div class="lib-emoji">🟤</div>
+            <div>
+              <h2 class="lib-name">Early Blight</h2>
+              <p class="lib-sci"><em>Alternaria solani</em></p>
+            </div>
+            <div class="lib-badge lb-early">🟠 Moderate</div>
+          </div>
+          <div class="lib-body">
+            <div class="lib-section"><h4>Description</h4><p>Early Blight appears on older, lower leaves and progresses upward. Less devastating than Late Blight but still causes significant yield loss if left untreated, especially in stressed plants.</p></div>
+            <div class="lib-section"><h4>Symptoms</h4><ul><li>Dark brown spots with distinctive concentric rings (target pattern)</li><li>Lesions surrounded by yellow halo</li><li>Starts on lowest, oldest leaves and moves upward</li><li>Leaves turn yellow then brown and die</li><li>Leathery dark lesions may appear on tubers</li></ul></div>
+            <div class="lib-section"><h4>Causes & Spread</h4><ul><li>Caused by the fungus <em>Alternaria solani</em></li><li>Spreads via wind-blown spores and rain splash</li><li>Favoured by warm (24–29°C), humid conditions with dry periods</li><li>Weakened plants (nutrient-stressed) are most susceptible</li></ul></div>
+            <div class="lib-section lib-orange"><h4>🟠 Treatment</h4><ul><li>Apply <strong>Copper Oxychloride 50% WP</strong> at 2kg/ha</li><li>Or use <strong>Mancozeb + Metalaxyl</strong> combination</li><li>Remove infected lower leaves before spraying</li><li>Ensure adequate nitrogen fertilisation to reduce stress</li><li>Spray every 10–14 days during humid periods</li><li>Rotate crops — avoid planting potatoes in same field for 2+ years</li></ul></div>
+          </div>
+        </div>
+
+        <!-- BACTERIAL WILT -->
+        <div class="lib-card lib-wilt">
+          <div class="lib-card-header">
+            <div class="lib-emoji">🥀</div>
+            <div>
+              <h2 class="lib-name">Bacterial Wilt</h2>
+              <p class="lib-sci"><em>Ralstonia solanacearum</em></p>
+            </div>
+            <div class="lib-badge lb-wilt">🟣 Severe</div>
+          </div>
+          <div class="lib-body">
+            <div class="lib-section"><h4>Description</h4><p>Bacterial Wilt is a soil-borne disease with no chemical cure. Once it infects a field, the bacteria can persist in soil for years. Prevention and crop rotation are the only effective strategies.</p></div>
+            <div class="lib-section"><h4>Symptoms</h4><ul><li>Sudden wilting of shoots even when soil has adequate moisture</li><li>Wilting starts in youngest leaves and progresses down</li><li>Brown discolouration of stem vascular tissue when cut</li><li>Milky bacterial ooze from cut stems in water</li><li>Rotting and browning inside tubers</li></ul></div>
+            <div class="lib-section"><h4>Causes & Spread</h4><ul><li>Caused by <em>Ralstonia solanacearum</em> (Race 3, Biovar 2)</li><li>Spreads through infected soil, water, tools, and seed tubers</li><li>Can survive in soil for up to 6 years</li><li>Waterlogged, warm soils favour the bacteria</li></ul></div>
+            <div class="lib-section lib-purple"><h4>🟣 Management (No Chemical Cure)</h4><ul><li><strong>Remove and destroy</strong> all infected plants immediately — do NOT compost</li><li>Do <strong>not replant potatoes</strong> in the same soil for at least 2 seasons</li><li>Use certified disease-free seed tubers only</li><li>Disinfect tools with bleach solution (1:9 ratio) between plants</li><li>Improve field drainage to reduce waterlogging</li><li>Rotate with non-host crops: maize, wheat, legumes</li></ul></div>
+          </div>
+        </div>
+
+      </div><!-- end library-grid -->
+    </div><!-- end library -->
+
+    <!-- ================================================
+         APP PAGE: FARMING TIPS
+    ================================================ -->
+    <div id="app-tips" class="app-page">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Farming Tips</h1>
+          <p class="page-subtitle">Expert advice to maximise your potato yield</p>
+        </div>
+      </div>
+
+      <!-- TIPS CATEGORIES -->
+      <div class="tips-tabs">
+        <button class="tips-tab active" onclick="filterTips('all',this)">All Tips</button>
+        <button class="tips-tab" onclick="filterTips('planting',this)">🌱 Planting</button>
+        <button class="tips-tab" onclick="filterTips('disease',this)">🦠 Disease</button>
+        <button class="tips-tab" onclick="filterTips('soil',this)">🌍 Soil</button>
+        <button class="tips-tab" onclick="filterTips('harvest',this)">🥔 Harvest</button>
+        <button class="tips-tab" onclick="filterTips('storage',this)">📦 Storage</button>
+      </div>
+
+      <div class="tips-grid" id="tipsGrid">
+        <!-- Injected by JS -->
+      </div>
+    </div><!-- end tips -->
+
+    <!-- ================================================
+         APP PAGE: REPORTS
+    ================================================ -->
+    <div id="app-reports" class="app-page">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">My Reports</h1>
+          <p class="page-subtitle">View and print detailed scan reports</p>
+        </div>
+        <button class="btn btn-green" onclick="generateSummaryReport()">📄 Generate Summary</button>
+      </div>
+
+      <div class="reports-layout">
+        <div class="reports-list" id="reportsList">
+          <div class="empty-state-small">No scan reports yet. Run a scan to generate reports.</div>
+        </div>
+
+        <!-- SUMMARY STATS -->
+        <div class="reports-summary">
+          <h3>Season Summary</h3>
+          <div id="summaryContent" class="summary-content">
+            <div class="summary-item"><span>Total Scans</span><strong id="sumTotal">0</strong></div>
+            <div class="summary-item"><span>Healthy</span><strong id="sumHealthy">0</strong></div>
+            <div class="summary-item"><span>Late Blight</span><strong id="sumLate">0</strong></div>
+            <div class="summary-item"><span>Early Blight</span><strong id="sumEarly">0</strong></div>
+            <div class="summary-item"><span>Bacterial Wilt</span><strong id="sumWilt">0</strong></div>
+            <div class="summary-item"><span>Health Rate</span><strong id="sumRate">—</strong></div>
+          </div>
+          <button class="btn btn-green full-width" onclick="printSummaryReport()" style="margin-top:16px">🖨️ Print Summary</button>
+        </div>
+      </div>
+    </div><!-- end reports -->
+
+    <!-- ================================================
+         APP PAGE: PROFILE
+    ================================================ -->
+    <div id="app-profile" class="app-page">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">My Profile</h1>
+          <p class="page-subtitle">Your account and farm information</p>
+        </div>
+      </div>
+
+      <div class="profile-layout">
+        <!-- Profile card -->
+        <div class="profile-card">
+          <div class="profile-avatar-big" id="profileAvatarBig">F</div>
+          <div class="profile-name" id="profileName">Farmer</div>
+          <div class="profile-id-badge" id="profileIdBadge">farmer001</div>
+          <div class="profile-location" id="profileLocationDisplay">📍 Uganda</div>
+          <button class="btn btn-outline full-width" onclick="toggleEditProfile()">✏️ Edit Profile</button>
+        </div>
+
+        <!-- Edit form -->
+        <div class="profile-form-card" id="profileFormCard" style="display:none">
+          <h3>Edit Profile</h3>
+          <div class="form-group"><label>Full Name</label><input type="text" id="pfName" placeholder="Your name"/></div>
+          <div class="form-group"><label>Location</label><input type="text" id="pfLocation" placeholder="e.g. Kabale, Uganda"/></div>
+          <div class="form-group"><label>Farm Size (acres)</label><input type="number" id="pfFarm" placeholder="e.g. 5"/></div>
+          <div class="form-group"><label>Phone Number</label><input type="tel" id="pfPhone" placeholder="+256 ..."/></div>
+          <div class="form-row">
+            <button class="btn btn-green" onclick="saveProfile()">Save Changes</button>
+            <button class="btn btn-outline" onclick="toggleEditProfile()">Cancel</button>
+          </div>
+        </div>
+
+        <!-- Settings card -->
+        <div class="settings-card">
+          <h3>Settings</h3>
+          <div class="setting-row">
+            <span>🌙 Dark Mode</span>
+            <label class="toggle"><input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode()"/><span class="slider"></span></label>
+          </div>
+          <div class="setting-row">
+            <span>🔔 Notifications</span>
+            <label class="toggle"><input type="checkbox" id="notifToggle" checked/><span class="slider"></span></label>
+          </div>
+          <div class="setting-row">
+            <span>📍 Auto-detect Location</span>
+            <label class="toggle"><input type="checkbox" id="locationToggle"/><span class="slider"></span></label>
+          </div>
+          <div class="setting-row">
+            <span>🌐 Language</span>
+            <select class="setting-select">
+              <option>English</option>
+              <option>Luganda</option>
+              <option>Runyankore</option>
+              <option>Swahili</option>
+            </select>
+          </div>
+          <button class="btn btn-danger full-width" onclick="doLogout()" style="margin-top:20px">⬅ Sign Out</button>
+        </div>
+      </div>
+    </div><!-- end profile -->
+
+    <!-- ================================================
+         APP PAGE: ABOUT
+    ================================================ -->
+    <div id="app-about" class="app-page">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">About PotatoGuard</h1>
+          <p class="page-subtitle">Version 1.0 · BSc Computer Science 2024/2025</p>
+        </div>
+      </div>
+
+      <div class="about-layout">
+        <div class="about-hero-card">
+          <div class="about-logo">🥔</div>
+          <h2>PotatoGuard</h2>
+          <p>AI-Powered Irish Potato Disease Detection System</p>
+          <div class="about-version">v1.0.0 · 2025</div>
+        </div>
+
+        <div class="about-card">
+          <h3>📖 Project Overview</h3>
+          <p>PotatoGuard was developed as a final year project for BSc Computer Science at Mbarara University of Science and Technology (2024/2025). It uses a Convolutional Neural Network (CNN) trained on the PlantVillage dataset to detect Irish potato leaf diseases in real time.</p>
+          <p>The model is served by a lightweight FastAPI service hosted on Hugging Face Spaces. Scan history is stored on the user's own device, and low-confidence photos are reported as unclear instead of guessed.</p>
+        </div>
+
+        <div class="about-card">
+          <h3>🎯 Mission</h3>
+          <p>Irish potatoes are a critical food and income crop for millions of Ugandan smallholder farmers. Late Blight alone can destroy an entire crop in less than two weeks. PotatoGuard puts expert-level disease diagnosis in every farmer's pocket — all you need is a phone camera and a connection.</p>
+        </div>
+
+        <div class="about-card">
+          <h3>🔗 Repository</h3>
+          <p>All source code is publicly available on GitHub:</p>
+          <a class="about-link" href="https://github.com/SsemuliJoseph/Smart-Crop" target="_blank">
+            github.com/SsemuliJoseph/Smart-Crop
+          </a>
+        </div>
+
+</div>
+    </div><!-- end about -->
+
+  </div><!-- end app-main -->
+</div><!-- end appShell -->
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort.min.js"></script>
+<script src="web-inference.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

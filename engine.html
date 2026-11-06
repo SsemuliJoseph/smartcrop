@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PotatoGuard on-device engine</title>
+</head>
+<body>
+<!-- Headless page for the Expo app's hidden WebView. Protocol (JSON strings):
+       app -> page : {type:'predict', id, base64}          (JPEG/PNG bytes, base64, no data: prefix)
+       page -> app : {type:'ready'} | {type:'result', id, result} | {type:'error', id, message}
+     The photo never leaves the phone; the model (web-model/model.onnx) is cached after the first load. -->
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort.min.js"></script>
+<script src="web-inference.js"></script>
+<script>
+(function () {
+  'use strict';
+  var seen = {};
+  function send(o) {
+    if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(JSON.stringify(o));
+  }
+  async function handle(raw) {
+    var msg;
+    try { msg = JSON.parse(raw); } catch (e) { return; }
+    if (!msg || msg.type !== 'predict' || seen[msg.id]) return; // Android+iOS fire on different targets; dedupe
+    seen[msg.id] = true;
+    try {
+      var blob = await (await fetch('data:image/jpeg;base64,' + msg.base64)).blob();
+      send({ type: 'result', id: msg.id, result: await PGLocal.predict(blob) });
+    } catch (e) {
+      send({ type: 'error', id: msg.id, message: (e && e.message) || String(e) });
+    }
+  }
+  document.addEventListener('message', function (e) { handle(e.data); }); // Android
+  window.addEventListener('message', function (e) { handle(e.data); });   // iOS
+  PGLocal.ready().then(
+    function () { send({ type: 'ready' }); },
+    function (e) { send({ type: 'error', id: null, message: (e && e.message) || 'Could not load the model' }); }
+  );
+})();
+</script>
+</body>
+</html>

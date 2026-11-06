@@ -1,0 +1,12 @@
+{
+  "classes": [
+    "Early Blight",
+    "Late Blight",
+    "Healthy"
+  ],
+  "display_names": [
+    "Early Blight",
+    "Late Blight",
+    "Healthy"
+  ]
+}

@@ -1,0 +1,5 @@
+# Dev/test dependencies (Python 3.10 - 3.12). Training deps: model/requirements.txt. Service deps: inference/requirements.txt
+-r inference/requirements.txt
+pytest>=7.4
+pytest-cov>=4.1
+httpx>=0.27

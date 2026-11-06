@@ -1,0 +1,76 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# React Native / Expo
+.expo/
+.expo-shared/
+dist/
+web-build/
+ios/
+android/
+
+# AWS / Environment
+.env
+.env.local
+.env.*.local
+aws-credentials
+*.pem
+
+# Model files (large)
+*.h5
+*.pkl
+*.pth
+model/data/
+model/logs/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Project specific
+PotatoGuard_CopilotPrompts.pdf
+.tmp
+temp/
+
+
+frontend/.env
+inference/model.keras
